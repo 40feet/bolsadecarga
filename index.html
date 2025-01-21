@@ -1,32 +1,435 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coming Soon</title>
+    <title>CargoConnect - Sua Plataforma de Cargas Europeia</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    
+    <!-- Scripts na ordem correta -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    
     <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #4f46e5;
+            --text-color: #1f2937;
+        }
+
         body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-color);
+        }
+
+        .hero-section {
+            position: relative;
+            min-height: 100vh;
+            padding: 120px 0;
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        .hero-content {
+            position: relative;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.97) 0%,
+                rgba(255, 255, 255, 0.95) 100%
+            );
+            padding: 2.5rem;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            z-index: 3;
+        }
+
+        .hero-image {
+            position: absolute;
+            right: -5%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 55%;
+            max-width: 800px;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(-50%) translateX(0); }
+            50% { transform: translateY(-50%) translateX(-20px); }
+            100% { transform: translateY(-50%) translateX(0); }
+        }
+
+        .navbar {
+            position: fixed;
+            width: 100%;
+            background-color: transparent !important;
+            padding: 20px 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-color) !important;
+        }
+
+        .nav-link {
+            color: var(--text-color) !important;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .btn-outline {
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 500;
+            background: transparent;
+        }
+
+        .feature-card {
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 12px;
+            padding: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateX(5px);
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background-color: #e0e7ff;
+            border-radius: 10px;
             display: flex;
-            justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+            justify-content: center;
+            font-size: 1.2rem;
         }
-        .container {
+
+        #map {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .custom-marker {
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+            }
+        }
+
+        .leaflet-popup-content {
             text-align: center;
+            font-family: 'Inter', sans-serif;
         }
-        img {
-            max-width: 100%;
-            height: auto;
+
+        .leaflet-popup-content h3 {
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+
+        .leaflet-control-container {
+            z-index: 2;
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="container">
-        <img src="https://via.placeholder.com/300" alt="Coming Soon">
-        <h1>Coming Soon</h1>
-    </div>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">CargoConnect</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="btn btn-primary ms-3" href="#register">Começar Agora</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div id="map"></div>
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-5 hero-content">
+                    <h1 class="display-4 fw-bold mb-4">
+                        Cargas e transportadores. Um só lugar.
+                    </h1>
+                    <p class="lead mb-4">
+                        Ligamos cargas e transportadores em minutos.
+                    </p>
+                    
+                    <!-- Features integradas na hero section -->
+                    <div class="features-container mb-4">
+                        <div class="feature-card mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="feature-icon me-3">
+                                    📦
+                                </div>
+                                <div>
+                                    <h3 class="h6 mb-1">Anuncie suas Cargas</h3>
+                                    <p class="text-muted small mb-0">Publique suas cargas e encontre os melhores transportadores</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="feature-card mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="feature-icon me-3">
+                                    🚛
+                                </div>
+                                <div>
+                                    <h3 class="h6 mb-1">Anuncie a disponibilidade dos seus camiões</h3>
+                                    <p class="text-muted small mb-0">Encontre rapidamente cargas que servem a sua disponibilidade</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-3">
+                        <button class="btn btn-primary">Registrar Agora</button>
+                        <button class="btn btn-outline">Como Funciona</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function createCustomIcon(count) {
+            return L.divIcon({
+                className: 'custom-marker',
+                html: `<span>${count}</span>`,
+                iconSize: [30, 30]
+            });
+        }
+
+        // Dados expandidos com mais cidades
+        // Dados expandidos com mais cidades e cargas
+const cargoData = [
+    // Reino Unido
+    { location: [51.5074, -0.1278], count: 45, city: "London" },
+    { location: [53.4808, -2.2426], count: 28, city: "Manchester" },
+    { location: [55.9533, -3.1883], count: 19, city: "Edinburgh" },
+    { location: [52.4862, -1.8904], count: 23, city: "Birmingham" },
+    { location: [53.7997, -1.5492], count: 16, city: "Leeds" },
+    
+    // França
+    { location: [48.8566, 2.3522], count: 67, city: "Paris" },
+    { location: [43.2965, 5.3698], count: 34, city: "Marseille" },
+    { location: [45.7640, 4.8357], count: 29, city: "Lyon" },
+    { location: [43.6047, 1.4442], count: 22, city: "Toulouse" },
+    { location: [47.2184, -1.5536], count: 18, city: "Nantes" },
+    { location: [50.6292, 3.0573], count: 25, city: "Lille" },
+    
+    // Alemanha
+    { location: [52.5200, 13.4050], count: 58, city: "Berlin" },
+    { location: [48.1351, 11.5820], count: 45, city: "Munich" },
+    { location: [50.9375, 6.9603], count: 37, city: "Cologne" },
+    { location: [53.5511, 9.9937], count: 42, city: "Hamburg" },
+    { location: [50.1109, 8.6821], count: 31, city: "Frankfurt" },
+    { location: [51.3397, 12.3731], count: 26, city: "Leipzig" },
+    
+    // Espanha
+    { location: [40.4168, -3.7038], count: 49, city: "Madrid" },
+    { location: [41.3851, 2.1734], count: 41, city: "Barcelona" },
+    { location: [39.4699, -0.3763], count: 28, city: "Valencia" },
+    { location: [37.3891, -5.9845], count: 23, city: "Sevilla" },
+    { location: [43.2627, -2.9253], count: 19, city: "Bilbao" },
+    
+    // Itália
+    { location: [41.9028, 12.4964], count: 52, city: "Roma" },
+    { location: [45.4642, 9.1900], count: 47, city: "Milano" },
+    { location: [45.4371, 10.9917], count: 24, city: "Verona" },
+    { location: [44.4949, 11.3426], count: 21, city: "Bologna" },
+    { location: [45.6495, 13.7768], count: 18, city: "Trieste" },
+    { location: [40.8518, 14.2681], count: 29, city: "Naples" },
+    
+    // Países Baixos
+    { location: [52.3676, 4.9041], count: 38, city: "Amsterdam" },
+    { location: [51.9244, 4.4777], count: 32, city: "Rotterdam" },
+    { location: [52.0116, 4.3571], count: 25, city: "The Hague" },
+    
+    // Bélgica
+    { location: [50.8503, 4.3517], count: 33, city: "Brussels" },
+    { location: [51.2194, 4.4025], count: 28, city: "Antwerp" },
+    { location: [51.0543, 3.7174], count: 21, city: "Ghent" },
+    
+    // Polônia
+    { location: [52.2297, 21.0122], count: 39, city: "Warsaw" },
+    { location: [50.0647, 19.9450], count: 27, city: "Kraków" },
+    { location: [54.3520, 18.6466], count: 23, city: "Gdańsk" },
+    { location: [51.1079, 17.0385], count: 19, city: "Wrocław" },
+    
+    // Portugal
+    { location: [38.7223, -9.1393], count: 31, city: "Lisboa" },
+    { location: [41.1579, -8.6291], count: 26, city: "Porto" },
+    { location: [37.0193, -7.9304], count: 15, city: "Faro" },
+    
+    // Suécia
+    { location: [59.3293, 18.0686], count: 29, city: "Stockholm" },
+    { location: [57.7089, 11.9746], count: 24, city: "Gothenburg" },
+    { location: [55.6044, 13.0038], count: 17, city: "Malmö" },
+    
+    // Dinamarca
+    { location: [55.6761, 12.5683], count: 27, city: "Copenhagen" },
+    { location: [56.1629, 10.2039], count: 19, city: "Aarhus" },
+    
+    // República Tcheca
+    { location: [50.0755, 14.4378], count: 32, city: "Prague" },
+    { location: [49.1951, 16.6068], count: 23, city: "Brno" },
+    
+    // Áustria
+    { location: [48.2082, 16.3738], count: 35, city: "Vienna" },
+    { location: [47.0707, 15.4395], count: 21, city: "Graz" },
+    
+    // Suíça
+    { location: [47.3769, 8.5417], count: 31, city: "Zurich" },
+    { location: [46.2044, 6.1432], count: 24, city: "Geneva" },
+    
+    // Hungria
+    { location: [47.4979, 19.0402], count: 34, city: "Budapest" },
+    { location: [46.2530, 20.1414], count: 18, city: "Szeged" },
+    
+    // Romênia
+    { location: [44.4268, 26.1025], count: 31, city: "Bucharest" },
+    { location: [46.7712, 23.6236], count: 19, city: "Cluj-Napoca" }
+];
+
+        // Inicializar o mapa
+        const map = L.map('map', {
+            center: [45.0, -10.0],
+            zoom: 5,
+            zoomControl: false, // Desativamos o controle padrão para posicioná-lo depois
+            scrollWheelZoom: true // Habilitamos o zoom com scroll
+        });
+
+        // Adicionar controle de zoom no canto inferior direito
+        L.control.zoom({
+            position: 'bottomright'
+        }).addTo(map);
+
+        // Adicionar camada do mapa
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Criar grupo de marcadores
+        const markers = L.markerClusterGroup({
+            showCoverageOnHover: false,
+            spiderfyOnMaxZoom: true,
+            zoomToBoundsOnClick: true,
+            maxClusterRadius: 50,
+            iconCreateFunction: function(cluster) {
+                const childCount = cluster.getChildCount();
+                let size = 'small';
+                
+                if (childCount > 20) size = 'large';
+                else if (childCount > 10) size = 'medium';
+                
+                return L.divIcon({
+                    html: `<div class="custom-marker cluster-${size}">${childCount}</div>`,
+                    className: 'custom-cluster',
+                    iconSize: L.point(40, 40)
+                });
+            }
+        });
+
+        // Adicionar estilo para os clusters
+        const style = document.createElement('style');
+        style.textContent = `
+            .custom-cluster {
+                background: none;
+                border: none;
+            }
+            .custom-marker {
+                width: 30px !important;
+                height: 30px !important;
+                line-height: 30px !important;
+                text-align: center;
+            }
+            .cluster-small {
+                background-color: rgba(37, 99, 235, 0.8);
+                width: 35px !important;
+                height: 35px !important;
+            }
+            .cluster-medium {
+                background-color: rgba(37, 99, 235, 0.85);
+                width: 40px !important;
+                height: 40px !important;
+            }
+            .cluster-large {
+                background-color: rgba(37, 99, 235, 0.9);
+                width: 45px !important;
+                height: 45px !important;
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Adicionar marcadores ao grupo
+        cargoData.forEach(cargo => {
+            const marker = L.marker(cargo.location, {
+                icon: createCustomIcon(cargo.count)
+            });
+
+            marker.bindPopup(`
+                <h3>${cargo.city}</h3>
+                <p>${cargo.count} cargas disponíveis</p>
+            `, {
+                closeButton: false
+            });
+
+            markers.addLayer(marker);
+        });
+
+        // Adicionar grupo ao mapa
+        map.addLayer(markers);
+    </script>
 </body>
 </html>
